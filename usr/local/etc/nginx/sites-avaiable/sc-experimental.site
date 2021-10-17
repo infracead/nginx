@@ -1,0 +1,39 @@
+server {
+	listen 80;
+	listen sc-experimental.cead.ufjf.br:80;
+	server_name sc-experimental.cead.ufjf.br;
+	
+	access_log /var/log/nginx/sc-experimental.access.log;
+	error_log /var/log/nginx/sc-experimental.error.log;
+
+	try_files $uri $uri/ /;
+	ssi on;
+
+	set $root_dir /usr/home/frederico/www;
+	rewrite ^(/~[^/]+)$ $1/ redirect;
+	rewrite ^/~(?<user>[^/]+)(.+) $2;
+	if ($user) {
+    		set $root_dir /home/$user/public_html;
+	}
+	root $root_dir;
+	
+	location ~ [^/]\.php(/|$) {
+		index index.html index.htm index.phtm;
+		fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+        	if (!-f $document_root$fastcgi_script_name) {
+                	return 404;
+        	}
+ 
+        fastcgi_param HTTP_PROXY "";
+ 
+        fastcgi_pass unix:/var/run/php73-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME   $document_root$fastcgi_script_name;
+    	}
+	
+	error_page 500 502 503 504 /50x.html;
+	location = /50x.html {
+		root /usr/local/www;
+	}
+}
